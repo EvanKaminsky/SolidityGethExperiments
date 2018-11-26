@@ -1,329 +1,35 @@
-loadScript("load-stat-scripts.js")
+loadScript("scripts/stats.js")
 loadScript("contract-ck/ck.js")
-stats()
-loadScript("load-js-contracts.js")
-KittyCore.ceoAddress.call()
+loadScript("scripts/ck-workload.js")
+var contracts = contractOutput.contracts;
+unlock();
+for (var key in contracts) {
+var contract_name = key.split(":")[1];
+var abi = JSON.parse(contracts[key].abi);
+var bin = "0x" + contracts[key].bin;
+var contract = web3.eth.contract(abi);
+eval("var " + contract_name + "Bin = bin;");
+eval("var " + contract_name + "Contract = contract;");
+}
+kittyStats()
+submitContract("KittyBase")
 eth.accounts[0]
-KittyCore.kittyIndexToOwner.call(0)
-KittyCore.balanceOf.call(eth.accounts[0])
-KittyCore.balanceOf.call(0)
-stats()
-miner.start(1)
+submitMineContract("KittyBase")
 miner.stop()
-stats()
-KittyCore.transfer(0, eth.accounts[0], 0)
-KittyCore.transfer.call(0, eth.accounts[0], 0)
-KittyCore.balanceOf.call(eth.accounts[0])
-KittyCore.balanceOf.call(0)
-eth.pendingTransactions
-stats()
-eth.pendingTransactions
-stats()
-KittyCore.transfer.call(0, eth.accounts[0], 0)
-stats()
-miner.start(1)
+loadScript("scripts/stats.js")
+submitMineContract("KittyBase")
 miner.stop()
-KittyCore.balanceOf.call(eth.accounts[0])
-KittyCore.balanceOf.call(0)
-eth.getBalance(eth.accounts[0])
-KittyCoreStorage.balanceOf.call(0)
-KittyCoreStorage.balanceOf.call(eth.accounts[0])
-eth.getBalance(eth.accounts[0])
-eth.getBlock("pending")
-eth.pendingTransactins
-miner.etherbase
-miner
-eth.pendingTransactions
-function stats() {
-    console.log("Reads:\t\t"     + debug.metrics(true).eth.db.chaindata.user.readscount.Overall);
-    console.log("Writes:\t\t"    + debug.metrics(true).eth.db.chaindata.user.writescount.Overall);
-    console.log("Reads (bytes):\t"     + debug.metrics(true).eth.db.chaindata.user.reads.Overall);
-    console.log("Writes (bytes):\t"    + debug.metrics(true).eth.db.chaindata.user.writes.Overall);
-    console.log("Pending:\t"     + eth.pendingTransactions.length);
-    console.log("Pending-Str:\t" + eth.getBlock("pending").transactions.length);
-    console.log("Peers:\t\t"     + admin.peers.length);
-    console.log("Block #:\t"     + eth.blockNumber);
-    console.log("Enode: "        + admin.nodeInfo.enode);
-    console.log("")
-}
-function pendingTransactions() {
-    return eth.getBlock("pending").transactions.length > 0;
-}
-function lookForTransactions() {
-    if (pendingTransactions()) {
-        console.log("Already have pending transactions! Terminating.");
-        return;
-    }
-    console.log("Looking for transactions...");
-    miner.start(1);
-    while (!pendingTransactions() && !kill) {}
-    console.log("Found pending transactions! Terminating.");
-    miner.stop();
-}
-function mineWhilePending() {
-    console.log("Starting to mine...");
-    miner.start(1);
-    while (pendingTransactions() && !kill) {}
-    console.log("No more transactions! Terminating.");
-    miner.stop();
-}
-function checkBlock(index) {
-    for (i = 0 ; i <= index; i++) {
-        if (eth.getBlock(i).transactions.length > 0) {
-            console.log(i);
-        }
-    }
-}
-function numTransactions() {
-    var block_num = 0;
-    var total_transactions = 0;
-    while (true) {
-        if (!eth.getBlock(block_num)) {
-            console.log("No block " + block_num + "!\n");
-            console.log("Total transactions: " + block_num);
-            break;
-        }
-        var num_transactions = eth.getBlock(block_num).transactions.length;
-        total_transactions += num_transactions;
-        console.log("Block " + block_num + ": " + num_transactions);
-        block_num++;
-    }
-}
-eth.accounts
-stat()
-loadScript("load-stat-scripts.js")
-loadScript("contract-ck/ck.js")
-loadScript("load-js-contracts.js")
-loadScript("ck-workload.js")
-transfer(-1, 0, 0, 500)
-transfer(-1, 0, 0, 1000)
-transfer(-1, 0, 0, 2000)
-transfer(-1, 0, 0, 3000)
-function transferWithPayer(from_account_index, to_account_index, kitty_id, gas, gas_account) {
-/*
-- Use -1 to represent the Null (0x0) account 
-- Gas >500
-*/
-from_account = (from_account_index < 0) ? 0 : eth.accounts[from_account_index];
-to_account   = (  to_account_index < 0) ? 0 : eth.accounts[  to_account_index];
-transaction_abi = KittyCore.transferFrom.getData(from_account, to_account, kitty_id);
-console.log();
-stats();
-eth.sendTransaction({from: gas_account, to: KittyCore.address, data: transaction_abi, gas: gas});
-console.log("\nTransaction submitted successfully!\n");
-stats();
-console.log();
-mineWhilePending();
-stats();
-console.log();
-}
-function transfer(from_account_index, to_account_index, kitty_id, gas) {
-transferWithPayer(from_account_index, to_account_index, kitty_id, gas, eth.accounts[0]);
-}
-transfer(-1, 0, 0, 2000)
-transfer(-1, 0, 0, 3000)
-transfer(-1, 0, 0, 5000)
-transfer(-1, 0, 0, 10000)
-transfer(-1, 0, 0, 20000)
-transfer(-1, 0, 0, 30000)
-function transferWithPayer(from_account_index, to_account_index, kitty_id, gas, gas_account) {
-/*
-- Use -1 to represent the Null (0x0) account 
-- Gas >30000
-*/
-// Extract parameters
-from_account = (from_account_index < 0) ? 0 : eth.accounts[from_account_index];
-to_account   = (  to_account_index < 0) ? 0 : eth.accounts[  to_account_index];
-transaction_abi = KittyCore.transferFrom.getData(from_account, to_account, kitty_id);
-console.log();
-stats();
-// Send transfer transaction to the blockchain
-eth.sendTransaction({from: gas_account, to: KittyCore.address, data: transaction_abi, gas: gas});
-console.log("\n> Transaction submitted successfully!\n");
-stats();
-// Mine the transaction
-mineWhilePending();
-stats();
-// Verify the state of CryptoKitties
-console.log("From Kitty Balance: " + KittyCore.balanceOf.call(from_account));
-console.log("  To Kitty Balance: " + KittyCore.balanceOf.call(to_account));
-console.log("Kitty " + kitty_id + " belongs to: ", KittyCore.kittyIndexToOwner.call(kitty_id));
-}
-function transfer(from_account_index, to_account_index, kitty_id, gas) {
-transferWithPayer(from_account_index, to_account_index, kitty_id, gas, eth.accounts[0]);
-}
-transfer(0, -1, 0, 30000)
-function transfer(from_account_index, to_account_index, kitty_id, gas) {
-transferWithPayer(from_account_index, to_account_index, kitty_id, gas, eth.accounts[0]);
-}
-transfer(0, -1, 0, 30000)
-function transfer(from_account_index, to_account_index, kitty_id, gas) {
-transferWithPayer(from_account_index, to_account_index, kitty_id, gas, eth.accounts[0]);
-}
-transfer(0, -1, 0, 30000)
-transfer(-1, 0, 0, 30000)
-function transfer(from_account_index, to_account_index, kitty_id, gas) {
-transferWithPayer(from_account_index, to_account_index, kitty_id, gas, eth.accounts[0]);
-}
-transfer(-1, 0, 0, 30000)
-function transfer(from_account_index, to_account_index, kitty_id, gas) {
-transferWithPayer(from_account_index, to_account_index, kitty_id, gas, eth.accounts[0]);
-}
-transfer(-1, 0, 0, 30000)
-eth.getBalance(eth.accounts[0])
-function transfer(from_account_index, to_account_index, kitty_id, gas) {
-transferWithPayer(from_account_index, to_account_index, kitty_id, gas, eth.accounts[0]);
-}
-transfer(-1, 0, 0, 30000)
-function transfer(from_account_index, to_account_index, kitty_id, gas) {
-transferWithPayer(from_account_index, to_account_index, kitty_id, gas, eth.accounts[0]);
-}
-transfer(-1, 0, 0, 30000)
-loadScript("contract-ck/ck.js")
-loadScript("scripts/load-contracts.js")
-KittyCore.numKitties.call()
-kittyStats()
+sleep
 loadScript("scripts/ck-workload.js")
-kittyStats()
-loadScript("scripts/ck-workload.js")
-kittyfunction kittyStats() {
-console.log("\nAccount Summary");
-console.log("   0x0 : " + KittyCore.balanceOf.call(0) + " kitties");
-for (var i = 0; i < eth.accounts.length; i++) {
-var kitty_balance = KittyCore.balanceOf.call(eth.accounts[i]);
-    console.log("     " + i + " : " + kitty_balance + " kitties");
-}
-console.log("\nKitty Summary");
-for (var i = 0; i < KittyCore.numKitties.call(); i++) {
-var owner = KittyCore.kittyIndexToOwner.call(i);
-console.log("   Kitty " + i + " : Account " + owner);
-}
-console.log("\nGas Summary");
-for (var i = 0; i < eth.accounts.length; i++) {
-var gas_balance = eth.getBalance(eth.accounts[i]);
-console.log("    " + i + " : " + gas_balance);
-}
-console.log();
-}
-function kittyStats() {
-console.log("\nAccount Summary");
-console.log("   0x0 : " + KittyCore.balanceOf.call(0) + " kitties");
-for (var i = 0; i < eth.accounts.length; i++) {
-var kitty_balance = KittyCore.balanceOf.call(eth.accounts[i]);
-    console.log("     " + i + " : " + kitty_balance + " kitties");
-}
-console.log("\nKitty Summary");
-for (var i = 0; i < KittyCore.numKitties.call(); i++) {
-var owner = KittyCore.kittyIndexToOwner.call(i);
-console.log("   Kitty " + i + " : Account " + owner);
-}
-console.log("\nGas Summary");
-for (var i = 0; i < eth.accounts.length; i++) {
-var gas_balance = eth.getBalance(eth.accounts[i]);
-console.log("    " + i + " : " + gas_balance);
-}
-console.log();
-}
-kittyStats()
-function kittyStats() {
-console.log("\nAccount Summary");
-console.log("   0x0 :", KittyCore.balanceOf.call(0), "kitties");
-for (var i = 0; i < eth.accounts.length; i++) {
-var kitty_balance = KittyCore.balanceOf.call(eth.accounts[i]);
-var kitty_text = (kitty_balance == 1) ? "kitty" : "kitties";
-    console.log("    ", i, ":", kitty_balance, kitty_text);
-}
-console.log("\nKitty Summary");
-for (var i = 0; i < KittyCore.numKitties.call(); i++) {
-var owner = KittyCore.kittyIndexToOwner.call(i);
-console.log("   Kitty", i, ": Account", owner);
-}
-console.log("\nGas Summary");
-for (var i = 0; i < eth.accounts.length; i++) {
-var gas_balance = eth.getBalance(eth.accounts[i]);
-console.log("   ", i, ":", gas_balance);
-}
-console.log();
-}
-kittyStats()
-function kittyStats() {
-console.log("\nAccount Summary");
-console.log("   0x0 :", KittyCore.balanceOf.call(0), "kitties");
-for (var i = 0; i < eth.accounts.length; i++) {
-var kitty_balance = KittyCore.balanceOf.call(eth.accounts[i]);
-    console.log("    ", i, ":", kitty_balance, "kitties");
-}
-console.log("\nKitty Summary");
-for (var i = 0; i < KittyCore.numKitties.call(); i++) {
-var owner = KittyCore.kittyIndexToOwner.call(i);
-console.log("   Kitty", i, ": Account", owner);
-}
-console.log("\nGas Summary");
-for (var i = 0; i < eth.accounts.length; i++) {
-var gas_balance = eth.getBalance(eth.accounts[i]);
-console.log("   ", i, ":", gas_balance);
-}
-console.log();
-}
-kittyStats()
-transfer(0, 1, 30000)
-loadScript("scripts/stats.js")
-kittyStats()
-transfer(0, 1, 30000)
-kittyStats()
-KittyCore.kittyIndexToOwner.call(0)
-x = KittyCore.kittyIndexToOwner.getData(0)
-eth.sendTransaction({from: eth.accounts[0], to: KittyCore.address, data:x})
-stats()
-kittyStats)_
-kittyStats()
-mineWhilePending()
-stats()
-kittyStats()
-KittyCore.balanceOf.call(0)
-loadScript("contract-ck/ck.js")
-loadScript("scripts/mine-contracts.js")
-kittyStats()
-transfer(-1, 0, 30000)
-kittyStats()
-loadScript("contract-ck/ck.js")
-loadScript("scripts/mine-contracts.js")
-kittyStats()
-loadScript("contract-ck/ck.js")
-loadScript("scripts/mine-contracts.js")
-kittyStats()
-loadScript("contract-ck/ck.js")
-loadScript("scripts/mine-contracts.js")
-kittyStats()
-address(0) == 0
-loadScript("contract-ck/ck.js")
-loadScript("scripts/mine-contracts.js")
-kittyStats()
-KittyCore.balanceOf.call(0)
-loadScript("scripts/stats.js")
-loadScript("contract-ck/ck.js")
-loadScript("scripts/mine-contracts.js")
-\\
-loadScript("scripts/ck-workload.js")
-kittyStats()
-loadScript("scripts/stats.js")
-loadScript("contract-ck/ck.js")
-loadScript("scripts/mine-contracts.js")
-loadScript("scripts/ck-workload.js")
-kittyStats()
-transfer(-1, 0, 30000)
-kittyStats()
-loadScript("scripts/ck-workload.js")
-kittyStats()
-createWithPayer(0, 0, 0, 1234, 0, 30000, 0)
-createWithPayer(0, 0, 0, 1234, 0, 30000, eth.accounts[0])
-kittyStats()
-loadScript("contract-ck/ck.js")
-loadScript("scripts/mine-contracts.js")
-kittyStats()
-loadScript("scripts/ck-workload.js")
-create(0, 100)
-create(0, 1000)
-create(0, 20000)
-create(0, 30000)
-kittyStats()
+submitMineContract("KittyBase")
+submitMineContract("KittyAccessControl")
+submitMineContract("KittyBase")
+submitMineContract("ERC721Metadata")
+submitMineContract("KittyAccessControl")
+submitMineContract("KittyBase")
+submitMineContract("KittyOwnership")
+submitMineContract("KittyBreeding")
+submitMineContract("KittyMinting")
+submitMineContract("KittyCore")
+submitMineContract("KittyAccessControl")
+exig
