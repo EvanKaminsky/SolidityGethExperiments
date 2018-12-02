@@ -10,7 +10,7 @@
  *
  * Notes
  * - Use -1 to represent the Null (0x0) account 
- *
+ * - Inspections: KC.kitties.call(0), KC.getKittyString.call(0), KC.getKitties.call()
  */
 
 function kittyStats() {
@@ -36,92 +36,133 @@ function kittyStats() {
 }
 
 
-GAS_ACCOUNT = eth.accounts[0];
-
-function unlock() {
-	personal.unlockAccount(GAS_ACCOUNT, "1234");
-}
-
-function allStats() {
-	stats();
-	kittyStats();
-}
-
-function mineThenStats() {
-	mineWhilePending();
-	allStats();
-}
-
-function sleep(milliseconds) {
-	var start = new Date().getTime();
-	for (var i = 0; i < 1e7; i++) {
-  		if ((new Date().getTime() - start) > milliseconds){
-    		break;
-  		}
-  	}
-}
-
-
-
-
 
 // Transfer
 
-function _sendTransfer(from_account_index, to_account_index, kitty_id, gas, print) {
+function _sendTransfer(from_account_index, to_account_index, kitty_id, gas) {
 	from_account = (from_account_index < 0) ? 0 : eth.accounts[from_account_index];
 	to_account   = (  to_account_index < 0) ? 0 : eth.accounts[  to_account_index];
 	unlock();
 
-	// Generate 'trsansferFrom' bytecode
 	transaction_abi = KittyCore.transferFrom.getData(from_account, to_account, kitty_id);
-	if (print) {
-		stats();
-	}
-
-	// Send transfer transaction to the blockchain
 	eth.sendTransaction({from: GAS_ACCOUNT, to: KittyCore.address, data: transaction_abi, gas: gas});
-	if (print) {
-		stats();
-	}
 }
 
 function transfer(from_account_index, to_account_index, kitty_id, gas) {
-	_sendTransfer(from_account_index, to_account_index, kitty_id, gas, true);
-	mineThenStats();
+	_sendTransfer(from_account_index, to_account_index, kitty_id, gas);
+	mineWhilePending();
 }
-
 
 
 // Create
 
-function _sendCreate(mom_id, dad_id, gen, genes, owner_account_index, gas, print) {
+function _sendCreate(mom_id, dad_id, gen, genes, owner_account_index, gas) {
 	owner_account = (owner_account_index < 0) ? 0 : eth.accounts[owner_account_index];
 	unlock();
 	
-	// Generate 'createKitty' bytecode 
 	create_abi = KittyCore.createKitty.getData(mom_id, dad_id, gen, genes, owner_account);
-	if (print) {
-		stats();
-	}
-
-	// Send transfer transaction to the blockchain
 	eth.sendTransaction({from: GAS_ACCOUNT, to: KittyCore.address, data: create_abi, gas: gas});
-	if (print) {
-		stats();
-	}
+}
+
+function _sendDefaultCreate(owner_account_index, gas) {
+	_sendCreate(0, 0, 0, 0, owner_account_index, gas);
 }
 
 function create(owner_account_index, gas) {
-	_sendCreate(0, 0, 0, 0, owner_account_index, gas, true);
-	mineThenStats();
+	_sendDefaultCreate(owner_account_index, gas);
+	mineWhilePending();	
 }
 
 
-// Batch Transactions
+// Sequential Transactions
 
-function multipleTransfers(quantity, gas) {
-	allStats();
+function seqCreates(quantity, gas) {
+	var previous_stats    = getStats();
+	var submission_stats = [0, 0, 0, 0];
+	var mining_stats     = [0, 0, 0, 0];
 
+	for (var i = 0; i < quantity; i++) {
+		_sendDefaultCreate(-1, gas);
+		submission_stats = add(submission_stats, subtract(getStats(), previous_stats));
+		previous_stats = getStats();
+
+		mineWhilePending();
+		mining_stats = add(mining_stats, subtract(getStats(), previous_stats));
+		previous_stats = getStats();
+	}
+	
+	console.log("Submission Stats:", submission_stats);
+	console.log("Mining Stats:    ", mining_stats, "\n");
+}
+
+function seqTransfers(quantity, gas) {
+	var previous_stats    = getStats();
+	var submission_stats = [0, 0, 0, 0];
+	var mining_stats     = [0, 0, 0, 0];
+
+	for (var i = 0; i < quantity; i++) {
+		var sender   =  0;
+		var receiver = -1;
+		if (i % 2 == 0) {
+			sender   = -1;
+			receiver =  0;
+		}
+
+		_sendTransfer(sender, receiver, 0, gas);
+		submission_stats = add(submission_stats, subtract(getStats(), previous_stats));
+		previous_stats = getStats();
+
+		mineWhilePending();
+		mining_stats = add(mining_stats, subtract(getStats(), previous_stats));
+		previous_stats = getStats();
+	}
+
+	console.log("Submission Stats:", submission_stats);
+	console.log("Mining Stats:    ", mining_stats, "\n");
+}
+
+
+// Multi-Account Transactions
+
+function multiTransfers(quantity, gas) {
+	var previous_stats = getStats();
+
+	for (var i = -1; i < quantity - 1; i++) {
+		_sendTransfer(i, i + 1, 0, gas);
+	}
+
+	var submission_stats = subtract(getStats(), previous_stats);
+	previous_stats = getStats();
+
+	mineWhilePending();
+	var mining_stats = subtract(getStats(), previous_stats);
+
+	console.log("Submission Stats:", submission_stats);
+	console.log("Mining Stats:    ", mining_stats, "\n");
+}
+
+function multiCreates(quantity, gas) {
+	var previous_stats = getStats();
+
+	for (var i = -1; i < quantity - 1; i++) {
+		_sendDefaultCreate(i, gas);
+	}
+
+	var submission_stats = subtract(getStats(), previous_stats);
+	previous_stats = getStats();
+
+	mineWhilePending();
+	var mining_stats = subtract(getStats(), previous_stats);
+
+	console.log("Submission Stats:", submission_stats);
+	console.log("Mining Stats:    ", mining_stats, "\n");
+}
+
+
+// Batch Transactions (Deprecated)
+
+function batchTransfers(quantity, gas) {
+	stats();
 	for (var i = 0; i < quantity; i++) {
 		if (i % 2 == 0) {
 			_sendTransfer(-1, 0, 0, gas, eth.accounts[0], false);
@@ -129,92 +170,18 @@ function multipleTransfers(quantity, gas) {
 			_sendTransfer(0, -1, 0, gas, eth.accounts[0], false);
 		}
 	}
-
-	stats();
-	mineThenStats();
-}
-
-function multipleCreates(quantity, gas) {
-	allStats();
-
-	for (var i = 0; i < quantity; i++) {
-		_sendCreate(0, 0, 0, 0, 0, gas, eth.accounts[0], false);
-	}
-
-	stats();
-	mineThenStats();
-}
-
-
-
-// Gas Calculations
-
-// Copy & Paste this function - Eval requires global scope with Geth
-function scopifyContracts() {
-	var contracts = contractOutput.contracts;
-	unlock();
-
-	for (var key in contracts) {
-		var contract_name = key.split(":")[1];
-		var abi = JSON.parse(contracts[key].abi);
-		var bin = "0x" + contracts[key].bin;
-		
-		var contract = web3.eth.contract(abi);
-		eval("var " + contract_name + "Bin = bin;");
-		eval("var " + contract_name + "Contract = contract;");
-	}
-}
-
-function submitContract(name, gas) {
-	unlock();
-
-	eval("var bin = " + name + "Bin;");
-	eval("var contract = " + name + "Contract;");
-
-	var storage_instance = contract.new({from: GAS_ACCOUNT, data: bin, gas: gas}, function(err, contract) {
-   		if (err) {
-   			console.log("✕ " + name + "\n   " + err);
-   		} else if (!contract.address) {
-   	 		console.log("~ " + name + " Pending\n");
-  		} else {
-     		console.log("✓ " + name + "Contract successfully mined!\n   Contract Address: " + contract.address);
-    	}
-    });
-
-	eval("var " + name + "Storage = storage_instance;");
-}
-
-function submitMineContract(name) {
-	miner.start(1);
-	sleep(1000 * 60 * 1);
-	miner.stop();
-
-	stats();
-	submitContract(name, 1100000);
 	stats();
 	mineWhilePending();
 	stats();
 }
 
-
-
-/*
-
-> Inspecting Kitties
-KittyCore.kitties.call(0)
-KittyCore.getKittyString.call(0)
-KittyCore.getKitties.call()
-
-> Creating Kitties
-KittyCore.createKitty.call(0, 0, 0, 1234, eth.accounts[0])
-
-*/
-
-
-
-
-
-
-
-
+function batchCreates(quantity, gas) {
+	stats();
+	for (var i = 0; i < quantity; i++) {
+		_defaultCreate(0, gas, eth.accounts[0], false);
+	}
+	stats();
+	mineWhilePending();
+	stats();
+}
 

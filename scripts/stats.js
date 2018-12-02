@@ -10,6 +10,15 @@ function stats() {
     console.log("Enode: "        + admin.nodeInfo.enode + "\n");
 }
 
+function getStats() {
+ return [
+    debug.metrics(true).eth.db.chaindata.user.readscount.Overall,
+    debug.metrics(true).eth.db.chaindata.user.reads.Overall,
+    debug.metrics(true).eth.db.chaindata.user.writescount.Overall,
+    debug.metrics(true).eth.db.chaindata.user.writes.Overall
+  ];
+}
+
 function pendingTransactions() {
     return eth.getBlock("pending").transactions.length > 0;
 }
@@ -87,4 +96,3 @@ function numTransactions() {
         block_num++;
     }
 }
-
